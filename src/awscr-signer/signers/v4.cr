@@ -18,23 +18,36 @@ module Awscr
           @credentials = Signer::Credentials.new(aws_access_key, aws_secret_key)
         end
 
-        def sign(string : String)
-          scope = Signer::Scope.new(@region, @service)
+        def sign(string : String, *, scope = Signer::Scope.new(@region, @service))
           sig = Signer::V4::Signature.new(scope, string, @credentials, compute_digest: false)
           sig.to_s
         end
 
         # Sign an HTTP::Request
-        def sign(request : HTTP::Request, add_sha = true, encode_path = true)
-          header_impl(request, add_sha, encode_path)
+        def sign(
+          request : HTTP::Request,
+          add_sha = true,
+          encode_path = true,
+          *,
+          scope = Signer::Scope.new(@region, @service),
+        )
+          header_impl(request, add_sha, encode_path, scope)
         end
 
-        def presign(request, encode_path = true)
-          querystring_impl(request, encode_path)
+        def presign(
+          request,
+          encode_path = true,
+          *,
+          scope = Signer::Scope.new(@region, @service),
+        )
+          querystring_impl(request, encode_path, scope)
         end
 
-        private def querystring_impl(request, encode_path)
-          scope = Signer::Scope.new(@region, @service)
+        private def querystring_impl(
+          request,
+          encode_path,
+          scope = Signer::Scope.new(@region, @service),
+        )
           request.query_params.add("X-Amz-Algorithm", Signer::ALGORITHM)
           request.query_params.add("X-Amz-Credential", "#{@credentials.key}/#{scope}")
           request.query_params.add("X-Amz-Date", scope.date.iso8601)
@@ -57,8 +70,12 @@ module Awscr
           request.query_params.add("X-Amz-Signature", signature.to_s)
         end
 
-        private def header_impl(request, add_sha, encode_path)
+        private def header_impl(
+          request,
+          add_sha,
+          encode_path,
           scope = Signer::Scope.new(@region, @service)
+        )
 
           @amz_security_token.try do |token|
             request.headers["X-Amz-Security-Token"] = token

@@ -10,15 +10,13 @@ module Awscr
           @credentials = Signer::Credentials.new(aws_access_key, aws_secret_key)
         end
 
-        def sign(string : String)
-          scope = Signer::Scope.new(@region, @service)
+        def sign(string : String, *, scope = Signer::Scope.new(@region, @service))
           sig = Signer::V2::Signature.new(scope, string, @credentials)
           sig.to_s
         end
 
         # Sign an HTTP::Request
-        def sign(request : HTTP::Request)
-          scope = Signer::Scope.new(@region, @service)
+        def sign(request : HTTP::Request, *, scope = Signer::Scope.new(@region, @service))
 
           # Replace "Date" with X-Amz-Date.
           # Only if X-Amz-Date is not already set. AWS prefers
@@ -48,8 +46,7 @@ module Awscr
           ].join
         end
 
-        def presign(request, expires = nil)
-          scope = Signer::Scope.new(@region, @service)
+        def presign(request, expires = nil, *, scope = Signer::Scope.new(@region, @service))
 
           expires ||= Time.utc.to_unix + 86_400
 
